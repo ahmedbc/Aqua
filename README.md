@@ -1,1 +1,1 @@
-# Aqua Project backend
+# Aqua Project
