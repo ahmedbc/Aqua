@@ -13,5 +13,8 @@ node_modules
 /coverage
 /coverage.json
 
-#VS Code
+# VS Code
 /.vscode/*
+
+# system
+.DS_Store
