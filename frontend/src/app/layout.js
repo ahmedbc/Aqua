@@ -24,7 +24,7 @@ const { connectors } = getDefaultWallets({
   chains
 });
 const wagmiConfig = createConfig({
-  autoConnect: true,
+  autoConnect: false,
   connectors,
   publicClient
 })
@@ -38,7 +38,7 @@ export default function RootLayout({ children }) {
   return (
 
     <html lang="en">
-      <body>
+      <body className='bg-white'>
         <WagmiConfig config={wagmiConfig}>
           <RainbowKitProvider chains={chains}>
             {children}
