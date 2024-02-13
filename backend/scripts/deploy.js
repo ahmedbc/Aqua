@@ -1,9 +1,3 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
 const hre = require("hardhat");
 
 async function deployAqETHTokenContract() {
@@ -12,9 +6,10 @@ async function deployAqETHTokenContract() {
 
   const aqETH = await hre.ethers.deployContract("AqETH");
   await aqETH.waitForDeployment();
-
-  return aqETH.target;
+  
   console.log(`AqETH contract is deployed to ${aqETH.target}`);
+
+  return aqETH;
 }
 
 async function deployAquaContract(aqETHAddress) {
@@ -25,14 +20,22 @@ async function deployAquaContract(aqETHAddress) {
   await aqua.waitForDeployment();
 
   console.log(`Aqua contract is deployed to ${aqua.target}`);
+
+  return aqua;
 }
 
 async function main() {
 
-  const aqETHAddress = await deployAqETHTokenContract();
+  const aqETH = await deployAqETHTokenContract();
 
-  await deployAquaContract(aqETHAddress);
+  const aqua = await deployAquaContract(aqETH.target);
   
+  // Grant Roles for the Aqua Staking contract
+  const MINTER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MINTER_ROLE"));
+  await aqETH.grantRole(MINTER_ROLE, aqua.target);
+  const BURNER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("BURNER_ROLE"));
+  await aqETH.grantRole(BURNER_ROLE, aqua.target);
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
