@@ -1,4 +1,8 @@
 'use client'
+// Tailwind
+import { Inter } from "next/font/google";
+import "./globals.css";
+const inter = Inter({ subsets: ["latin"] });
 
 // Rainbowkit
 import '@rainbow-me/rainbowkit/styles.css';
@@ -20,7 +24,7 @@ const { chains, publicClient } = configureChains(
 );
 const { connectors } = getDefaultWallets({
   appName: 'AquaAlyra',
-  projectId: 'a850e22221181adfc7402d287a29a21d',
+  projectId: process.env.NEXT_PUBLIC_WALLETCONNECTID,
   chains
 });
 const wagmiConfig = createConfig({
@@ -28,10 +32,7 @@ const wagmiConfig = createConfig({
   connectors,
   publicClient
 })
-// Tailwind
-import { Inter } from "next/font/google";
-import "./globals.css";
-const inter = Inter({ subsets: ["latin"] });
+
 
 
 export default function RootLayout({ children }) {
