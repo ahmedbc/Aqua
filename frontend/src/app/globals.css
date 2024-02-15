@@ -16,6 +16,14 @@
   }
 }
 
+body {
+  color: white;
+  background: conic-gradient(from 45deg, #0A3239, #A33C41);
+  background-image: conic-gradient(from 45deg, #00d2ff, #005792);
+  background: conic-gradient(from 45deg, #2CAEC4, #4F4EF0) no-repeat;
+  background-size: cover;
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

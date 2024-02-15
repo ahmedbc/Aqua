@@ -1,19 +1,15 @@
 // React
-import { useState, useEffect } from "react"
-
-// wagmi, viem
-import { useAccount, useBalance } from 'wagmi'
-import { prepareWriteContract, writeContract, readContract, waitForTransaction, getPublicClient } from '@wagmi/core'
-
-
-// VIEM (pour les events)
+import { useState } from "react"
+// wagmi, viem, Rainbowkit
+import { useAccount } from 'wagmi'
+import { prepareWriteContract, writeContract } from '@wagmi/core'
 import { parseEther } from 'viem'
-
-import AmountInput from "../AmountInput/AmountInput";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 // Constants
 import { aqETHcontractAddress, aqETHAbi, aquaContractAddress, aquaAbi } from '../../constants'
-import WalletBalance from "./WalletBalance";
+// Components
+import WalletBalance from "../WalletBalance/WalletBalance";
+import AmountInput from "../AmountInput/AmountInput";
 
 export default function StakingForm() {
     const { address, isConnected } = useAccount();
@@ -21,21 +17,6 @@ export default function StakingForm() {
     const [amount, setAmount] = useState(0)
     const [ethBalance, setEthBalance] = useState(0)
     const [aqEthBalance, setAqEthBalance] = useState(0)
-
-    const fetchTotalPooledEther = async () => {
-        try {
-            const data = await readContract({
-                address: aquaContractAddress,
-                abi: aquaAbi,
-                functionName: 'getTotalPooledEther',
-            })
-            console.log(data);
-            return data;
-        } catch (error) {
-            console.log(error);
-        }
-    }
-    //fetchTotalPooledEther();
 
     const stakeETH = async () => {
 
@@ -65,18 +46,16 @@ export default function StakingForm() {
                 account: address
             })
             const data = await writeContract(config)
-            console.log(data);
             return data;
         } catch (error) {
             console.log(error);
         }
     }
 
-    //stakeETH()
     return (
         <>
             <div className="min-h-80 flex justify-center items-center">
-                <div className="w-full max-w-lg p-6 bg-blue border border-gray-200 rounded-lg shadow">
+                <div className="w-full max-w-lg p-6 border border-gray-200 rounded-lg shadow bg-black bg-opacity-10">
                     {isConnected ? (
                         <div className="my-2">
                             <WalletBalance
@@ -92,28 +71,56 @@ export default function StakingForm() {
                     <div className="my-2">
                         <AmountInput amount={amount} setAmount={setAmount} ethBalance={ethBalance} />
                     </div>
-                    <div className="my-2">
+                    <div className="mb-2 mt-6 flex justify-center items-center">
                         {isConnected ? (
-                            <div>
+                            <div className="justify-center">
                                 <button
                                     type="button"
                                     onClick={withdrawETH}
-                                    className="text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                    className="text-white bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
                                 >
                                     UnStake
-                                </button>
+                                </button>                               
                                 <button
                                     type="button"
                                     onClick={stakeETH}
-                                    className="text-white bg-blue-700 hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 font-medium rounded-full text-sm px-5 py-2.5 text-center me-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                                    className="text-white bg-gradient-to-r from-cyan-400 via-cyan-500 to-cyan-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-cyan-300 dark:focus:ring-cyan-800 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2"
                                 >
                                     Stake
                                 </button>
 
                             </div>
                         ) : (
-                            <ConnectButton />
+                            <div className="mt-5 mb-2 flex justify-center items-center h-full">
+
+                                <ConnectButton />
+
+                            </div>
+
                         )}
+
+                    </div>
+                    <div className="flex justify-center items-center">
+                        <div className="w-full max-w-lg mx-auto   ">
+                            <div className="p-4">
+                                
+                                <div className="mt-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-light">Exchange rate</span>
+                                        <span className="text-lg font-light">1 ETH = 1.1 aqETH</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-light">Max transaction cost</span>
+                                        <span className="text-lg font-light">$8</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-light">Reward fee </span>
+                                        <span className="text-lg font-light">5%</span>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                 </div>

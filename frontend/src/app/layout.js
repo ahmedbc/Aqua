@@ -39,7 +39,7 @@ export default function RootLayout({ children }) {
   return (
 
     <html lang="en">
-      <body className='bg-white'>
+      <body className={`${inter.className} h-screen w-full m-0`} >
         <WagmiConfig config={wagmiConfig}>
           <RainbowKitProvider chains={chains}>
             {children}

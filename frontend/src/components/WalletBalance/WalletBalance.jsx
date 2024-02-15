@@ -1,6 +1,10 @@
+//React
 import { useEffect } from 'react';
+// wagmi, viem
 import { useAccount, useBalance } from 'wagmi';
 import { fetchBalance } from '@wagmi/core'
+import { formatUnits } from 'viem'
+
 
 export default function WalletBalance({ ethBalance, aqEthBalance, setEthBalance, setAqEthBalance }) {
   const { address, isConnected } = useAccount();
@@ -12,28 +16,28 @@ export default function WalletBalance({ ethBalance, aqEthBalance, setEthBalance,
     watch: true,
   });
 
-
   useEffect(() => {
     const fetchAqEthBalance = async () => {
       try {
-        const aqEthB = await fetchBalance({
+        const data = await fetchBalance({
           address: address,
           token: process.env.NEXT_PUBLIC_AQETH_CONTRACT_ADDRESS,
         });
-        setAqEthBalance(aqEthB);
+        setAqEthBalance(formatUnits(data.value, 18));
       } catch (error) {
         console.error('Failed to fetch AQETH balance:', error);
       }
     }
     fetchAqEthBalance();
 
-    setEthBalance(ethB);
+    setEthBalance(formatUnits(ethB.value, 18));
   }, [ethB, address])
 
+ if(isLoading) return;
   return (
-    <div>
-      <div>Available to stake: {parseFloat(ethBalance.formatted).toFixed(6)} ETH</div>
-      <div>Staked amount: {parseFloat(aqEthBalance.formatted).toFixed(6)} aqETH</div>
+    <div className='mb-6'>
+      <div>Available to stake: {ethBalance} ETH</div>
+      <div>Staked amount: {aqEthBalance} aqETH</div>
     </div>
   )
 
