@@ -24,7 +24,7 @@ export default function StakingForm() {
             const config = await prepareWriteContract({
                 address: aquaContractAddress,
                 abi: aquaAbi,
-                functionName: 'stakeETH',
+                functionName: 'deposit',
                 value: parseEther(amount),
                 account: address
             })
@@ -41,7 +41,7 @@ export default function StakingForm() {
             const config = await prepareWriteContract({
                 address: aquaContractAddress,
                 abi: aquaAbi,
-                functionName: 'withdrawETH',
+                functionName: 'redeem',
                 args: [parseEther(amount)],
                 account: address
             })

@@ -1,80 +1,156 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.23;
+pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "./token/AqETH.sol";
+import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
-contract Aqua is ERC20, Ownable, ReentrancyGuard {
+/**
+ * @title ERC4626ETH
+ * @dev ERC4626 implementation for native ETH.
+ */
+contract Aqua is ERC20, Ownable {
+    using Math for uint256;
+
+    mapping(address => uint256) public gainedInterests;
+    uint256 private constant INITIAL_EXCHANGE_RATE = 99; // Initial 1 ETH = 1 aqETH for simplicity
+    uint256 private constant EXCHANGE_RATE_BASE = 100; // Base value for calculations
+    uint256 private ASSET_STEP = 10e21; // 1,000 ETH in wei for rate adjustment
+    uint256 private RATE_DECREASE_PER_STEP = 1; // Decrease rate by 0.01 aqETH per ASSET_STEP
+
+
     
-    mapping(address => uint256) private shares;
+    event Deposit(address indexed owner, uint256 assets, uint256 shares);
+    event Redeem(address indexed owner, uint256 assets, uint256 shares);
 
-    uint256 private totalPooledEther;
-    uint256 private totalShares;
+    error ExceededMaxDeposit(address staker, uint256 assets, uint256 max);
+    error ExceededMaxRedeem(address staker, uint256 shares, uint256 max);
 
-    event Staked(address indexed user, uint256 amount, uint256 sharesIssued);
-    event Withdrawn(address indexed user, uint256 ethAmount, uint256 sharesBurned);
-    event RecoveredETH(uint256 amount);
+    constructor() ERC20("Aqua staked ETH", "aqETH") Ownable(msg.sender) {}
 
-    error DirectETHTransfer();
-
-    AqETH public aqETH;
-
-    constructor(address _aqETH) ERC20("Liquid Staking aqETH", "aqETH") Ownable(msg.sender) {
-        require(_aqETH != address(0), "AqETH address cannot be zero.");
-        aqETH = AqETH(_aqETH);
+    // Set ASSET_STEP value
+    function setAssetStep(uint256 _newStep) external onlyOwner {
+        require(_newStep > 0, "Asset step must be greater than 0.");
+        ASSET_STEP = _newStep;
     }
 
-    function stakeETH() external payable nonReentrant {
-        require(msg.value > 0, "Must stake more than 0.");
+    // Set RATE_DECREASE_PER_STEP value
+    function setRateDecreasePerStep(uint256 _newRateDecrease) external onlyOwner {
+        require(_newRateDecrease > 0, "Rate decrease must be greater than 0.");
+        RATE_DECREASE_PER_STEP = _newRateDecrease;
+    }
+    
+    function currentExchangeRate() public view returns (uint256) {
+        uint256 total = totalAssets();
+        uint256 steps = total / ASSET_STEP; 
+        uint256 rateDecrease = steps * RATE_DECREASE_PER_STEP; 
 
-        uint256 newShares = msg.value;
-        if (totalShares > 0) {
-            newShares = (msg.value * totalShares) / totalPooledEther;
+        uint256 currentRate = INITIAL_EXCHANGE_RATE - rateDecrease;
+        
+        
+        if (currentRate < 80) {
+            currentRate = minimumRate;
         }
 
-        shares[msg.sender] += newShares;
-        totalShares += newShares;
-        totalPooledEther += msg.value;
-
-        aqETH.mint(msg.sender, newShares);
-
-        emit Staked(msg.sender, msg.value, newShares);
+        return currentRate;
     }
 
-    function withdrawETH(uint256 shareAmount) external nonReentrant {
-        require(shareAmount > 0, "Must withdraw more than 0.");
-        require(shareAmount <= shares[msg.sender], "Insufficient shares.");
 
-        uint256 ethAmount = (shareAmount * totalPooledEther) / totalShares;
-
-        shares[msg.sender] -= shareAmount;
-        totalShares -= shareAmount;
-        totalPooledEther -= ethAmount;
-
-        aqETH.burn(msg.sender, shareAmount);
-        (bool sent, ) = msg.sender.call{value: ethAmount}("");
-        require(sent, "Failed to send ETH.");
-
-        emit Withdrawn(msg.sender, ethAmount, shareAmount);
+    function totalAssets() public view returns (uint256) {
+        return address(this).balance;
     }
 
-    function sharesOf(address account) public view returns (uint256) {
-        return shares[account];
+    function maxRedeem(address owner) public view virtual returns (uint256) {
+        console.log(gainedInterests[owner]);
+        return balanceOf(owner) + gainedInterests[owner];
     }
 
-    function getTotalPooledEther() public view returns (uint256) {
-        return totalPooledEther;
+    function maxDeposit() public pure returns (uint256) {
+        return 5_000 * 1e18; // 10000 ETH
     }
 
-    function getTotalShares() public view returns (uint256) {
-        return totalShares;
+    function previewDeposit(uint256 assets) public view returns (uint256) {
+        return _convertToShares(assets);
     }
 
-    // Allow contract to receive ETH
-    receive() external payable {
-        revert DirectETHTransfer();
+    function previewRedeem(uint256 shares) public view virtual returns (uint256) {
+        return _convertToAssets(shares);
     }
 
+    function deposit() external payable returns (uint256) {
+        require(msg.value > 0, "Must deposit more than 0.");
+        address staker = msg.sender;
+        uint256 assets = msg.value; 
+        uint256 maxAssets = maxDeposit();
+
+        if (assets > maxAssets) {
+            revert ExceededMaxDeposit(staker, assets, maxAssets);
+        }
+
+
+        uint256 shares = previewDeposit(assets);
+
+        uint256 interestGained = assets - shares;
+
+        // Update the mapping with the gained interest.
+        gainedInterests[staker] += interestGained;
+        
+        _mint(staker, shares);
+
+        emit Deposit(staker, assets, shares);
+
+        return shares;
+    }
+
+    function redeem(uint256 shares) external {
+        require(shares > 0, "Must withdraw more than 0.");
+        address staker = msg.sender;
+        uint256 maxShares = maxRedeem(msg.sender);
+        
+
+        if(shares > maxShares) {
+            revert ExceededMaxRedeem(staker, shares, maxShares);
+        }
+
+        uint256 assets = previewRedeem(shares);
+        _burn(msg.sender, shares);
+
+        payable(msg.sender).transfer(assets);
+
+        emit Redeem(msg.sender, shares, assets);
+    }
+
+    function _convertToShares(uint256 _assets) internal view returns (uint256) {
+        uint256 currentRate = currentExchangeRate();
+        
+        uint256 calculatedShares = 0;
+        // in case the totalAssets is 0 we return 0
+        if(totalAssets() == 0) {
+            return calculatedShares;
+        }
+        // Subtract the currently depositing assets to get the pre-deposit totalAssets
+        // this is due to the fact that deposit is payable and the totalAssets is in advance
+        // compared to the totalSupply
+        uint256 adjustedTotalAssets = totalAssets() - _assets;
+        uint256 totalSupply_ = totalSupply();
+
+        if (totalSupply_ == 0 || adjustedTotalAssets == 0) {
+            // This might be the first deposit.
+            calculatedShares = (_assets * currentRate) / EXCHANGE_RATE_BASE;
+            
+        } else {
+            calculatedShares = (_assets.mulDiv(totalSupply_, adjustedTotalAssets) * currentRate) / EXCHANGE_RATE_BASE;
+        }
+        return calculatedShares;
+    }
+
+    function _convertToAssets(uint256 _shares) internal view virtual returns (uint256) {
+        // in case the totalSupply is 0 we return 0
+        if(totalSupply() == 0) {
+            return 0;
+        }
+        uint256 currentRate = currentExchangeRate();
+        return (_shares.mulDiv(totalAssets(), totalSupply()) * EXCHANGE_RATE_BASE) / currentRate;
+    }
 }

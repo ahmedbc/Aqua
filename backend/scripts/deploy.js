@@ -26,15 +26,11 @@ async function deployAquaContract(aqETHAddress) {
 
 async function main() {
 
-  const aqETH = await deployAqETHTokenContract();
 
   const aqua = await deployAquaContract(aqETH.target);
   
-  // Grant Roles for the Aqua Staking contract
-  const MINTER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("MINTER_ROLE"));
-  await aqETH.grantRole(MINTER_ROLE, aqua.target);
-  const BURNER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("BURNER_ROLE"));
-  await aqETH.grantRole(BURNER_ROLE, aqua.target);
+aqua.setAssetStep(10e21)
+aqua.setRateDecreasePerStep(1)
 
 }
 
