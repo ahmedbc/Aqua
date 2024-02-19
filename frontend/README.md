@@ -26,4 +26,6 @@ Before you begin, make sure you have [Node.js](https://nodejs.org/) installed. T
    ```
 
 4. Run local server:
+5. ```
    npm run dev
+   ```
