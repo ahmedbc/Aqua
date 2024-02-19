@@ -16,6 +16,7 @@ contract Aqua is ERC20, Ownable {
     mapping(address => uint256) public gainedInterests;
     uint256 private constant INITIAL_EXCHANGE_RATE = 99; // Initial 1 ETH = 1 aqETH for simplicity
     uint256 private constant EXCHANGE_RATE_BASE = 100; // Base value for calculations
+    uint256 private constant MINIMUM_EXCHANGE_RATE = 100;
     uint256 private ASSET_STEP = 10e21; // 1,000 ETH in wei for rate adjustment
     uint256 private RATE_DECREASE_PER_STEP = 1; // Decrease rate by 0.01 aqETH per ASSET_STEP
 
@@ -50,7 +51,7 @@ contract Aqua is ERC20, Ownable {
         
         
         if (currentRate < 80) {
-            currentRate = minimumRate;
+            currentRate = MINIMUM_EXCHANGE_RATE;
         }
 
         return currentRate;

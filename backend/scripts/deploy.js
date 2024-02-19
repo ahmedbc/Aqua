@@ -12,11 +12,11 @@ async function deployAqETHTokenContract() {
   return aqETH;
 }
 
-async function deployAquaContract(aqETHAddress) {
+async function deployAquaContract() {
 
-  console.log(`Start deploying  Aqua staking contract...`, aqETHAddress);
+  console.log(`Start deploying  Aqua staking contract...`);
 
-  const aqua = await hre.ethers.deployContract("Aqua", [aqETHAddress]);
+  const aqua = await hre.ethers.deployContract("Aqua");
   await aqua.waitForDeployment();
 
   console.log(`Aqua contract is deployed to ${aqua.target}`);
@@ -27,10 +27,10 @@ async function deployAquaContract(aqETHAddress) {
 async function main() {
 
 
-  const aqua = await deployAquaContract(aqETH.target);
-  
-aqua.setAssetStep(10e21)
-aqua.setRateDecreasePerStep(1)
+  const aqua = await deployAquaContract();
+  const assetStep = ethers.parseEther("1000");
+  aqua.setAssetStep(assetStep);
+  aqua.setRateDecreasePerStep(1);
 
 }
 

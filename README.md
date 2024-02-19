@@ -4,8 +4,10 @@
 
 Aqua is a liquid ETH staking application that allows users to stake their ETH and receive Interest Bearing Tokens (aqETH) in return. aqETH tokens represent a staked position in the ETH pool and accrue interest over time, offering a profitable and liquid staking solution.
 
+## Live demo
+https://aqua-kappa-six.vercel.app/
 
-## Description Readme
+## Description
 
 [Backend README](./backend/README.md)
 
