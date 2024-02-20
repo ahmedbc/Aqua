@@ -20,6 +20,7 @@ describe("Aqua", function () {
 
         return { aqua, owner, addr1, addr2, addr3, randomAmount, accountsBalance };
     }
+    
     //const { aqua, owner, addr1, addr2, addr3 } = await loadFixture(deployAquaFixture);
     describe("Deployment", function () {
 
@@ -48,26 +49,62 @@ describe("Aqua", function () {
             expect(await aqua.decimals()).to.equal(18);
         });
 
+        it("Should setRateDecreaseStep be called only by owner", async function () {
+            const { aqua, addr1 } = await loadFixture(deployAquaFixture);
+            const newStep = ethers.parseEther("10000");
+            await expect(aqua.connect(addr1).setRateDecreaseStep(newStep))
+            .to.be.revertedWithCustomError(aqua, "OwnableUnauthorizedAccount");
+        });
+        it("Should getRateDecreaseStep be called only by owner", async function () {
+            const { aqua, addr1 } = await loadFixture(deployAquaFixture);
+            const newStep = ethers.parseEther("10000");
+            await expect(aqua.connect(addr1).getRateDecreaseStep())
+            .to.be.revertedWithCustomError(aqua, "OwnableUnauthorizedAccount");
+        });
+        it("Should setRateDecreasePerStep be called only by owner", async function () {
+            const { aqua, addr1 } = await loadFixture(deployAquaFixture);
+            await expect(aqua.connect(addr1).setRateDecreasePerStep(2n))
+            .to.be.revertedWithCustomError(aqua, "OwnableUnauthorizedAccount");
+        });
+    
+        it("Should getRateDecreasePerStep be called only by owner", async function () {
+            const { aqua, addr1 } = await loadFixture(deployAquaFixture);
+            await expect(aqua.connect(addr1).getRateDecreasePerStep())
+            .to.be.revertedWithCustomError(aqua, "OwnableUnauthorizedAccount");
+        });
+
+        it("Should setRateDecreasePerStep correctly", async function () {
+            const { aqua } = await loadFixture(deployAquaFixture);
+            const newStep = ethers.parseEther("10000");
+            await aqua.setRateDecreaseStep(newStep);
+            expect(await aqua.getRateDecreaseStep()).to.equal(newStep);
+            expect(aqua.setRateDecreaseStep(0n)).to.be.reverted;
+        });
+
+        it("Should setRateDecreaseStep correctly", async function () {
+            const { aqua } = await loadFixture(deployAquaFixture);
+            await aqua.setRateDecreasePerStep(2n);
+            expect(await aqua.getRateDecreasePerStep()).to.equal(2n);
+            expect(aqua.setRateDecreasePerStep(0n)).to.be.reverted;
+        });
+
     });
 
     describe("Deposit", function () {
 
         it("Should previewDeposit return 0 in an empty vault", async function () {
-            const { aqua, randomAmount } = await loadFixture(deployAquaFixture);
-            expect(await aqua.previewDeposit(randomAmount)).to.equal(0);
+            const { aqua } = await loadFixture(deployAquaFixture);
+            const assets = ethers.parseEther("4");
+            const shares = ethers.parseEther("3.96");
+            expect(await aqua.previewDeposit(assets)).to.equal(shares);
         });
 
         it("Should allow deposits and emit Deposit event", async function () {
-            const { aqua, addr1, addr2, randomAmount } = await loadFixture(deployAquaFixture);
-            const accountsBalance = ethers.parseEther("4000");
-            /*await expect(aqua.connect(addr1).deposit({ value: randomAmount }))
+            const { aqua, addr1, randomAmount } = await loadFixture(deployAquaFixture);
+            
+            await expect(aqua.connect(addr1).deposit({ value: randomAmount }))
                 .to.emit(aqua, "Deposit")
-                .withArgs(addr1.address, randomAmount, randomAmount);*/
-            //const expectedShares = await aqua.previewDeposit(accountsBalance);
-            //console.log("accountsBalance", accountsBalance);
-            //console.log("expectedShares", expectedShares);
-            //console.log("balanceOf",  await aqua.balanceOf(addr1.address));
-            //expect(await aqua.balanceOf(addr1.address)).to.equal(expectedShares);
+                .withArgs(addr1.address, randomAmount, await aqua.previewDeposit(randomAmount));
         });
 
         it("Should totalSupply match the amount of deposits", async function () {
@@ -132,7 +169,9 @@ describe("Aqua", function () {
     describe("Redeem", function () {
         it("Should previewRedeem return 0 in an empty vault", async function () {
             const { aqua, randomAmount } = await loadFixture(deployAquaFixture);
-            expect(await aqua.previewRedeem(randomAmount)).to.equal(0);
+            const assets = ethers.parseEther("4");
+            const shares = ethers.parseEther("3.96");
+            expect(await aqua.previewRedeem(shares)).to.equal(assets);
         });
 
         it("Should allow redeem and emit Redeem event", async function () {
@@ -183,6 +222,7 @@ describe("Aqua", function () {
             await expect(aqua.connect(addr1).redeem(0))
                 .to.be.reverted;
         });
-        
+     
     });
+
 });

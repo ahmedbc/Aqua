@@ -28,8 +28,8 @@ async function main() {
 
 
   const aqua = await deployAquaContract();
-  const assetStep = ethers.parseEther("1000");
-  aqua.setAssetStep(assetStep);
+  const assetStep = ethers.parseEther("10000");
+  aqua.setRateDecreaseStep(assetStep);
   aqua.setRateDecreasePerStep(1);
 
 }
